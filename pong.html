@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pong Fullscreen</title>
+  <style>
+    body {
+      margin: 0;
+      background-color: black;
+      color: white;
+      font-family: Arial, sans-serif;
+      overflow: hidden;
+    }
+    canvas {
+      display: block;
+    }
+    #score {
+      position: absolute;
+      top: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 24px;
+      color: white;
+    }
+  </style>
+</head>
+<body>
+  <div id="score">Player 1: 0 | Player 2: 0</div>
+  <canvas id="gameCanvas"></canvas>
+
+  <script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // Resize canvas to fill the screen
+    function resizeCanvas() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    }
+    resizeCanvas();
+    window.addEventListener('resize', resizeCanvas);
+
+    // Game variables
+    const paddleWidth = 10;
+    const paddleHeight = canvas.height / 5; // Paddles are 20% of the screen height
+    const ballSize = 15;
+    let player1Score = 0, player2Score = 0;
+
+    // Ball speed
+    const initialSpeedX = 4, initialSpeedY = 4;
+    let ballSpeedX = initialSpeedX, ballSpeedY = initialSpeedY;
+
+    // Timer for speed increase and color change
+    let pointStartTime = Date.now();
+    const ballColors = ['green', 'blue', 'purple', 'red', 'yellow'];
+    let currentColorIndex = 0;
+
+    // Paddle positions
+    let leftPaddleY = canvas.height / 2 - paddleHeight / 2;
+    let rightPaddleY = canvas.height / 2 - paddleHeight / 2;
+
+    // Ball position
+    let ballX = canvas.width / 2, ballY = canvas.height / 2;
+
+    // Key states
+    const keys = {};
+
+    // Event listeners for key presses
+    document.addEventListener('keydown', (e) => keys[e.key] = true);
+    document.addEventListener('keyup', (e) => keys[e.key] = false);
+
+    // Reset ball position and speed
+    function resetBall() {
+      ballX = canvas.width / 2;
+      ballY = canvas.height / 2;
+      ballSpeedX = initialSpeedX * (Math.random() > 0.5 ? 1 : -1);
+      ballSpeedY = initialSpeedY * (Math.random() > 0.5 ? 1 : -1);
+      pointStartTime = Date.now(); // Reset the timer
+      currentColorIndex = 0; // Reset the ball color
+    }
+
+    // Game loop
+    function gameLoop() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Draw goals
+      ctx.fillStyle = 'gray';
+      ctx.fillRect(0, 0, 10, canvas.height); // Left goal
+      ctx.fillRect(canvas.width - 10, 0, 10, canvas.height); // Right goal
+
+      // Draw paddles
+      ctx.fillStyle = 'white';
+      ctx.fillRect(10, leftPaddleY, paddleWidth, paddleHeight);
+      ctx.fillRect(canvas.width - 20, rightPaddleY, paddleWidth, paddleHeight);
+
+      // Draw ball
+      ctx.fillStyle = ballColors[currentColorIndex];
+      ctx.fillRect(ballX, ballY, ballSize, ballSize);
+
+      // Move paddles
+      if (keys['w'] && leftPaddleY > 0) leftPaddleY -= 7;
+      if (keys['s'] && leftPaddleY < canvas.height - paddleHeight) leftPaddleY += 7;
+      if (keys['k'] && rightPaddleY > 0) rightPaddleY -= 7;
+      if (keys['m'] && rightPaddleY < canvas.height - paddleHeight) rightPaddleY += 7;
+
+      // Move ball
+      ballX += ballSpeedX;
+      ballY += ballSpeedY;
+
+      // Ball collision with top and bottom
+      if (ballY <= 0 || ballY >= canvas.height - ballSize) {
+        ballSpeedY = -ballSpeedY;
+      }
+
+      // Ball collision with paddles
+      if (
+        ballX <= 20 &&
+        ballY > leftPaddleY &&
+        ballY < leftPaddleY + paddleHeight
+      ) {
+        ballSpeedX = -ballSpeedX;
+      }
+
+      if (
+        ballX >= canvas.width - 30 &&
+        ballY > rightPaddleY &&
+        ballY < rightPaddleY + paddleHeight
+      ) {
+        ballSpeedX = -ballSpeedX;
+      }
+
+      // Ball out of bounds (goals)
+      if (ballX <= 0) {
+        player2Score++;
+        resetBall();
+      }
+
+      if (ballX >= canvas.width) {
+        player1Score++;
+        resetBall();
+      }
+
+      // Increase ball speed and change color every 10 seconds
+      const elapsed = Date.now() - pointStartTime;
+      if (elapsed >= 10000) { // 10 seconds
+        ballSpeedX *= 1.2; // Stronger increase in speed
+        ballSpeedY *= 1.2; // Stronger increase in speed
+        currentColorIndex = (currentColorIndex + 1) % ballColors.length; // Cycle through colors
+        pointStartTime = Date.now(); // Reset the timer
+      }
+
+      // Update score
+      document.getElementById('score').innerText = `Player 1: ${player1Score} | Player 2: ${player2Score}`;
+
+      // Loop
+      requestAnimationFrame(gameLoop);
+    }
+
+    // Start game
+    resetBall();
+    gameLoop();
+  </script>
+</body>
+</html>
